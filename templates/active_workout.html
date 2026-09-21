@@ -1,0 +1,235 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+    {{ workout["name"] }} | Beginner Fitness Tracker
+{% endblock %}
+
+
+{% block content %}
+    <section class="plan-title-row">
+        <div>
+            <h1>
+                {{ workout["name"] }}
+            </h1>
+
+            <p class="secondary-text">
+                {{ program["name"] }}
+            </p>
+        </div>
+
+        <a
+            class="secondary-button"
+            href="{{ url_for(
+                'workouts.view_program',
+                program_id=program['program_id'],
+                selected=workout['workout_id']
+            ) }}"
+        >
+            Cancel workout
+        </a>
+    </section>
+
+
+    <form
+        method="post"
+        action="{{ url_for(
+            'workouts.finish_workout',
+            program_id=program['program_id'],
+            workout_id=workout['workout_id']
+        ) }}"
+    >
+        <section class="workout-date-panel">
+            <div class="form-field">
+                <label for="workout-date">
+                    Workout date
+                </label>
+
+                <input
+                    type="date"
+                    id="workout-date"
+                    name="workout_date"
+                    max="{{ today }}"
+                    value="{{ form_data.get('workout_date', today) }}"
+                    required
+                >
+            </div>
+        </section>
+
+
+        <div class="active-exercise-list">
+            {% for item in exercise_data %}
+                {% set exercise = item["exercise"] %}
+
+                <article class="active-exercise-card">
+                    <div class="exercise-plan-header">
+                        <div>
+                            <h2>
+                                {{ exercise["name"] }}
+                            </h2>
+
+                            <div class="tag-list">
+                                <span class="tag">
+                                    {{ exercise["primary_muscle"] }}
+                                </span>
+
+                                <span class="tag">
+                                    {{ exercise["equipment"] }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <span class="target-badge">
+                            {{ exercise["target_sets"] }}
+                            sets ×
+                            {{ exercise["target_reps"] }}
+                            reps
+                        </span>
+                    </div>
+
+
+                    {% if item["previous_log"] %}
+                        <section class="previous-session">
+                            <div class="session-section-heading">
+                                <h3>
+                                    Previous session
+                                </h3>
+
+                                <span class="secondary-text">
+                                    {{ item["previous_log"]["log_date"] }}
+                                </span>
+                            </div>
+
+                            <div class="previous-set-list">
+                                {% for previous_set in item["previous_sets"] %}
+                                    <div class="previous-set-row">
+                                        <strong>
+                                            Set
+                                            {{ previous_set["set_number"] }}
+                                        </strong>
+
+                                        <span>
+                                            {% if
+                                                previous_set["weight"]
+                                                is not none
+                                            %}
+                                                {{ "%g"|format(previous_set["weight"]) }}
+                                                kg ×
+                                            {% else %}
+                                                Bodyweight ×
+                                            {% endif %}
+
+                                            {{ previous_set["reps"] }}
+                                            reps
+                                        </span>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </section>
+
+                    {% else %}
+                        <div class="no-history">
+                            <strong>
+                                Previous session:
+                            </strong>
+
+                            None recorded
+                        </div>
+                    {% endif %}
+
+
+                    <section class="current-session">
+                        <h3>
+                            Current session
+                        </h3>
+
+                        <div class="current-set-list">
+                            {% for set_number in range(
+                                1,
+                                exercise["target_sets"] + 1
+                            ) %}
+                                {% set weight_name =
+                                    "weight_"
+                                    ~ exercise["exercise_id"]
+                                    ~ "_"
+                                    ~ set_number
+                                %}
+
+                                {% set reps_name =
+                                    "reps_"
+                                    ~ exercise["exercise_id"]
+                                    ~ "_"
+                                    ~ set_number
+                                %}
+
+                                <div class="current-set-row">
+                                    <div class="set-number-label">
+                                        Set {{ set_number }}
+                                    </div>
+
+                                    <div class="form-field">
+                                        <label
+                                            for="weight-{{ exercise['exercise_id'] }}-{{ set_number }}"
+                                        >
+                                            Weight (kg)
+                                        </label>
+
+                                        <input
+                                            type="number"
+                                            id="weight-{{ exercise['exercise_id'] }}-{{ set_number }}"
+                                            name="{{ weight_name }}"
+                                            min="0"
+                                            max="1000"
+                                            step="0.25"
+                                            value="{{ form_data.get(weight_name,'') }}"
+                                        >
+                                    </div>
+
+
+                                    <div class="form-field">
+                                        <label
+                                            for="reps-{{ exercise['exercise_id'] }}-{{ set_number }}"
+                                        >
+                                            Reps
+                                        </label>
+
+                                        <input
+                                            type="number"
+                                            id="reps-{{ exercise['exercise_id'] }}-{{ set_number }}"
+                                            name="{{ reps_name }}"
+                                            min="1"
+                                            max="100"
+                                            value="{{ form_data.get(reps_name,'') }}"
+                                            required
+                                        >
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </section>
+                </article>
+            {% endfor %}
+        </div>
+
+
+        <section class="workout-finish-panel">
+            <a
+                class="secondary-button"
+                href="{{ url_for(
+                    'workouts.view_program',
+                    program_id=program['program_id'],
+                    selected=workout['workout_id']
+                ) }}"
+            >
+                Cancel
+            </a>
+
+            <button
+                type="submit"
+                class="primary-button"
+            >
+                Finish and save workout
+            </button>
+        </section>
+    </form>
+{% endblock %}
