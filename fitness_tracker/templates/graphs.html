@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+    Progress Graphs | Beginner Fitness Tracker
+{% endblock %}
+
+
+{% block content %}
+    <section class="page-heading">
+        <h1>Progress graphs</h1>
+
+        <p class="secondary-text">
+            View changes in your recorded exercise
+            performance over time.
+        </p>
+    </section>
+
+
+    {% if tracked_exercises %}
+        <section class="control-panel progress-selector">
+            <form
+                method="get"
+                action="{{ url_for('progress.graphs') }}"
+                class="inline-form"
+            >
+                <div class="form-field grow">
+                    <label for="exercise-select">
+                        Exercise
+                    </label>
+
+                    <select
+                        id="exercise-select"
+                        name="exercise_id"
+                    >
+                        {% for exercise in tracked_exercises %}
+                            <option
+                                value="{{ exercise['exercise_id'] }}"
+                                {% if
+                                    selected_exercise
+                                    and exercise["exercise_id"]
+                                    == selected_exercise["exercise_id"]
+                                %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ exercise["name"] }}
+                                —
+                                {{ exercise["equipment"] }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    View progress
+                </button>
+            </form>
+        </section>
+
+
+        {% if selected_exercise %}
+            <section class="progress-heading">
+                <div>
+                    <h2>
+                        {{ selected_exercise["name"] }}
+                    </h2>
+
+                    <div class="tag-list">
+                        <span class="tag">
+                            {{
+                                selected_exercise[
+                                    "primary_muscle"
+                                ]
+                            }}
+                        </span>
+
+                        <span class="tag">
+                            {{
+                                selected_exercise[
+                                    "equipment"
+                                ]
+                            }}
+                        </span>
+                    </div>
+                </div>
+            </section>
+
+
+            <section class="progress-summary-grid">
+                <article class="progress-summary-card">
+                    <span class="secondary-text">
+                        Sessions recorded
+                    </span>
+
+                    <strong>
+                        {{ sessions|length }}
+                    </strong>
+                </article>
+
+                <article class="progress-summary-card">
+                    <span class="secondary-text">
+                        First recorded
+                    </span>
+
+                    <strong>
+                        {{ sessions[0]["display_date"] }}
+                    </strong>
+                </article>
+
+                <article class="progress-summary-card">
+                    <span class="secondary-text">
+                        Latest recorded
+                    </span>
+
+                    <strong>
+                        {{ sessions[-1]["display_date"] }}
+                    </strong>
+                </article>
+            </section>
+
+
+            <section class="progress-chart-panel">
+                <div class="progress-chart-toolbar">
+                    <div>
+                        <h2>Performance over time</h2>
+
+                        <p
+                            id="metric-description"
+                            class="secondary-text"
+                        >
+                        </p>
+                    </div>
+
+                    <div class="form-field metric-control">
+                        <label for="metric-select">
+                            Metric
+                        </label>
+
+                        <select
+                            id="metric-select"
+                            data-default-metric="
+                                {% if has_weight_data %}
+                                    best_weight
+                                {% else %}
+                                    best_reps
+                                {% endif %}
+                            "
+                        >
+                            {% if has_weight_data %}
+                                <option value="best_weight">
+                                    Best weight
+                                </option>
+
+                                <option value="volume">
+                                    Total volume
+                                </option>
+                            {% endif %}
+
+                            <option value="best_reps">
+                                Best reps
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+
+                <div class="progress-chart-wrapper">
+                    <svg
+                        id="progress-chart"
+                        class="progress-chart"
+                        viewBox="0 0 900 360"
+                        role="img"
+                        data-exercise-name="{{
+                            selected_exercise['name']
+                        }}"
+                    >
+                        <title id="progress-chart-title">
+                            Exercise progress chart
+                        </title>
+
+                        <desc id="progress-chart-description">
+                            Exercise performance over recorded
+                            workout sessions.
+                        </desc>
+                    </svg>
+                </div>
+
+                {% if sessions|length < 2 %}
+                    <p class="chart-note">
+                        Record another session to create a
+                        visible progress trend.
+                    </p>
+                {% endif %}
+            </section>
+
+
+            <section class="program-section">
+                <div class="section-heading">
+                    <h2>Recorded sessions</h2>
+                </div>
+
+                <div class="progress-table-wrapper">
+                    <table class="progress-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">
+                                    Date
+                                </th>
+
+                                <th scope="col">
+                                    Workout
+                                </th>
+
+                                <th scope="col">
+                                    Best set
+                                </th>
+
+                                <th scope="col">
+                                    Volume
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for session in sessions|reverse %}
+                                <tr>
+                                    <td>
+                                        {{ session["display_date"] }}
+                                    </td>
+
+                                    <td>
+                                        {{ session["workout_name"] }}
+                                    </td>
+
+                                    <td>
+                                        {% if
+                                            session["best_set_weight"]
+                                            is not none
+                                        %}
+                                            {{ "%g"|format(session["best_set_weight"]) }}
+                                            kg ×
+                                            {{ session["best_set_reps"] }}
+                                            reps
+                                        {% else %}
+                                            Bodyweight ×
+                                            {{ session["best_set_reps"] }}
+                                            reps
+                                        {% endif %}
+                                    </td>
+
+                                    <td>
+                                        {% if session["volume"] is not none %}
+                                            {{ "%g"|format(session["volume"]) }}
+                                            kg
+                                        {% else %}
+                                            —
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+
+            <script
+                id="progress-data"
+                type="application/json"
+            >
+                {{ graph_data|tojson }}
+            </script>
+        {% endif %}
+
+    {% else %}
+        <section class="empty-state large-empty-state">
+            <h2>No workout history yet</h2>
+
+            <p>
+                Complete a workout to begin tracking
+                exercise progress.
+            </p>
+
+            <a
+                class="primary-button"
+                href="{{ url_for('plans.index') }}"
+            >
+                Go to plans
+            </a>
+        </section>
+    {% endif %}
+{% endblock %}
+
+
+{% block scripts %}
+    {% if selected_exercise %}
+        <script
+            src="{{ url_for(
+                'static',
+                filename='progress.js'
+            ) }}"
+        ></script>
+    {% endif %}
+{% endblock %}
